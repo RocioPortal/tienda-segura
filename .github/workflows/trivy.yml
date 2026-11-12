@@ -1,0 +1,29 @@
+
+name: Trivy - Seguridad Docker
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  trivy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Construir imagen Docker
+        run: docker build -t tienda-segura:tp4 .
+
+      - name: Analizar imagen con Trivy
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          scan-type: image
+          image-ref: tienda-segura:tp4
+          format: table
+          severity: HIGH,CRITICAL
+          exit-code: '0'
