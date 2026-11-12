@@ -15,4 +15,9 @@ if (require.main === module) {
   app.listen(3000, () => console.log('Tienda disponible en http://localhost:3000'));
 }
 
+app.get("/calcular", (req, res) => {
+  const resultado = Number(req.query.a) + Number(req.query.b);
+  res.json({ resultado });
+});
+
 module.exports = { app, total };
