@@ -1,0 +1,65 @@
+
+name: OWASP ZAP - Seguridad Web
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  zap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar codigo
+        uses: actions/checkout@v4
+
+      - name: Construir imagen Docker
+        run: docker build -t tienda-segura:zap .
+
+      
+      - name: Iniciar aplicacion
+        run: |
+          docker run -d --name tienda-zap \
+            -p 127.0.0.1:3000:3000 tienda-segura:zap
+
+          for intento in {1..30}; do
+            if curl -fsS 'http://127.0.0.1:3000/total?p=100&c=2'; then
+              echo "Aplicacion lista"
+              exit 0
+            fi
+
+            echo "Esperando aplicacion..."
+            sleep 2
+          done
+
+          docker logs tienda-zap
+          exit 1
+
+
+      - name: Analizar seguridad con OWASP ZAP
+        run: |
+          mkdir -p zap-report
+          chmod 777 zap-report
+
+          docker run --rm --network host \
+            -v "$PWD/zap-report:/zap/wrk/:rw" \
+            ghcr.io/zaproxy/zaproxy:stable \
+            zap-baseline.py \
+            -t 'http://127.0.0.1:3000/total?p=100&c=2' \
+            -r reporte-zap.html \
+            -m 1 -I
+
+      - name: Guardar informe de seguridad
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-owasp-zap
+          path: zap-report/reporte-zap.html
+          if-no-files-found: warn
+
+      - name: Detener aplicacion
+        if: always()
+        run: docker rm -f tienda-zap || true
