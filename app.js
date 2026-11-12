@@ -3,7 +3,7 @@ const express = require('express');
 const app = express();
 
 function total(precio, cant, desc) {
-  return precio * cant * (1 + desc);
+  return precio * cant * (1 - desc);
 }
 
 app.get('/total', (req, res) => {
